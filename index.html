@@ -3,9 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b0b0c" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>타임스탬프 카메라</title>
+  <meta name="apple-mobile-web-app-title" content="타임스탬프" />
+  <title>타임스탬프</title>
+
+  <!-- 별도 이미지 파일 없이 바로 작동하는 내장 SVG 앱 아이콘 -->
+  <link id="favicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%2318181b'/%3E%3Crect x='76' y='76' width='360' height='360' rx='56' fill='none' stroke='%23ffffff' stroke-width='20' stroke-opacity='0.25'/%3E%3Ccircle cx='256' cy='236' r='88' fill='none' stroke='%23ffffff' stroke-width='28'/%3E%3Ccircle cx='256' cy='236' r='34' fill='%23facc15'/%3E%3Ccircle cx='364' cy='136' r='16' fill='%2322c55e'/%3E%3Crect x='116' y='362' width='180' height='24' rx='12' fill='%23ffffff'/%3E%3Crect x='116' y='398' width='120' height='20' rx='10' fill='%23facc15'/%3E%3C/svg%3E" />
+  <link id="appleIcon" rel="apple-touch-icon" href="" />
+  <link id="manifestLink" rel="manifest" href="" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700;800&display=swap" rel="stylesheet" />
@@ -264,17 +273,14 @@
 <body>
 
   <div class="top-bar">
-    <!-- 저장 폴더 선택 버튼 -->
     <button id="folderBtn" title="저장할 폴더 선택">📁 폴더 지정</button>
 
-    <!-- 글자 크기 -->
     <div class="option-group" id="sizeGroup">
       <button class="opt-btn" data-size="normal">보통</button>
       <button class="opt-btn active" data-size="large">크게</button>
       <button class="opt-btn" data-size="xlarge">특대</button>
     </div>
 
-    <!-- 글자 색상 -->
     <div class="option-group" style="padding: 4px 7px; gap: 6px;">
       <button class="color-btn active" data-color="#FFFFFF" style="background:#FFFFFF;" aria-label="흰색"></button>
       <button class="color-btn" data-color="#FACC15" style="background:#FACC15;" aria-label="노란색"></button>
@@ -306,6 +312,79 @@
   <canvas id="canvas" style="display:none;"></canvas>
 
   <script>
+    // 홈 화면 바로가기용 고해상도 PNG 아이콘 및 PWA Manifest 동적 생성
+    (function setupAppIcon() {
+      const iconCanvas = document.createElement('canvas');
+      iconCanvas.width = 512;
+      iconCanvas.height = 512;
+      const ictx = iconCanvas.getContext('2d');
+
+      // 다크 라운드 배경
+      ictx.fillStyle = '#18181b';
+      ictx.beginPath();
+      ictx.roundRect(0, 0, 512, 512, 112);
+      ictx.fill();
+
+      // 1:1 프레임 가이드라인
+      ictx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+      ictx.lineWidth = 18;
+      ictx.beginPath();
+      ictx.roundRect(72, 72, 368, 368, 52);
+      ictx.stroke();
+
+      // 카메라 렌즈 링
+      ictx.strokeStyle = '#ffffff';
+      ictx.lineWidth = 28;
+      ictx.beginPath();
+      ictx.arc(256, 230, 86, 0, Math.PI * 2);
+      ictx.stroke();
+
+      // 렌즈 코어 (노란 포인트)
+      ictx.fillStyle = '#facc15';
+      ictx.beginPath();
+      ictx.arc(256, 230, 32, 0, Math.PI * 2);
+      ictx.fill();
+
+      // 우측 상단 녹화/활성 램프
+      ictx.fillStyle = '#22c55e';
+      ictx.beginPath();
+      ictx.arc(366, 134, 16, 0, Math.PI * 2);
+      ictx.fill();
+
+      // 왼쪽 하단 2열 타임스탬프 바 표현
+      ictx.fillStyle = '#ffffff';
+      ictx.beginPath();
+      ictx.roundRect(114, 356, 190, 22, 11);
+      ictx.fill();
+
+      ictx.fillStyle = '#facc15';
+      ictx.beginPath();
+      ictx.roundRect(114, 392, 126, 20, 10);
+      ictx.fill();
+
+      const pngDataUrl = iconCanvas.toDataURL('image/png');
+      document.getElementById('appleIcon').href = pngDataUrl;
+
+      const manifest = {
+        name: '타임스탬프 카메라',
+        short_name: '타임스탬프',
+        start_url: location.href,
+        display: 'standalone',
+        background_color: '#0b0b0c',
+        theme_color: '#0b0b0c',
+        icons: [
+          {
+            src: pngDataUrl,
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable'
+          }
+        ]
+      };
+      const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+      document.getElementById('manifestLink').href = URL.createObjectURL(manifestBlob);
+    })();
+
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const squareFrame = document.getElementById('squareFrame');
@@ -324,9 +403,8 @@
     let currentSize = 'large';
     let currentColor = '#FFFFFF';
     let lastImageUrl = null;
-    let dirHandle = null; // 지정된 폴더 핸들
+    let dirHandle = null;
 
-    // IndexedDB에 폴더 핸들 기억시키기 (재방문 시 편리하게 재연결)
     function openDB() {
       return new Promise((resolve, reject) => {
         const req = indexedDB.open('TimestampCamDB', 1);
@@ -356,13 +434,11 @@
       }
     }
 
-    // 페이지 로드 시 이전에 지정한 폴더 이름 표시
     (async () => {
       const saved = await loadDirHandle();
       if (saved) {
         dirHandle = saved;
         folderBtn.textContent = `📁 ${saved.name}`;
-        // 이미 권한이 유지되고 있는지 확인
         const perm = await saved.queryPermission({ mode: 'readwrite' });
         if (perm === 'granted') {
           folderBtn.classList.add('connected');
@@ -370,14 +446,12 @@
       }
     })();
 
-    // 폴더 지정 버튼 클릭
     folderBtn.addEventListener('click', async () => {
       if (!window.showDirectoryPicker) {
         alert('현재 브라우저는 폴더 직접 지정을 지원하지 않습니다. 기본 Download 폴더에 저장됩니다.');
         return;
       }
       try {
-        // 이전에 저장된 핸들이 있으면 권한만 재요청 시도
         if (dirHandle) {
           const perm = await dirHandle.requestPermission({ mode: 'readwrite' });
           if (perm === 'granted') {
@@ -387,7 +461,6 @@
             return;
           }
         }
-        // 새 폴더 선택 창 열기
         const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
         dirHandle = handle;
         await saveDirHandle(handle);
@@ -543,7 +616,6 @@
         thumbPreview.src = lastImageUrl;
         thumbPreview.style.display = 'block';
 
-        // 지정된 폴더(Diet)가 있으면 해당 폴더에 직접 파일 쓰기
         if (dirHandle) {
           try {
             let perm = await dirHandle.queryPermission({ mode: 'readwrite' });
@@ -564,7 +636,6 @@
           }
         }
 
-        // 폴더 미지정 또는 권한 거부 시 기본 Download 폴더로 저장
         fallbackDownload(lastImageUrl, filename);
         showToast('Download 폴더에 저장되었습니다');
       }, 'image/jpeg', 0.95);
