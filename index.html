@@ -30,15 +30,14 @@
       user-select: none;
     }
 
-    /* 상단 설정 바 */
     .top-bar {
       width: 100%;
       max-width: 540px;
-      padding: 14px 16px;
+      padding: 12px 14px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       z-index: 10;
     }
 
@@ -48,19 +47,21 @@
       border-radius: 20px;
       padding: 3px;
       gap: 2px;
+      align-items: center;
     }
 
     .opt-btn {
       background: transparent;
       color: #a1a1aa;
       border: none;
-      padding: 6px 12px;
+      padding: 6px 10px;
       border-radius: 17px;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 700;
       font-family: inherit;
       cursor: pointer;
       transition: all 0.15s ease;
+      white-space: nowrap;
     }
 
     .opt-btn.active {
@@ -68,9 +69,34 @@
       color: #000000;
     }
 
+    #folderBtn {
+      background: #1c1c1e;
+      color: #e4e4e7;
+      border: 1px solid #3f3f46;
+      padding: 6px 11px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      max-width: 125px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    #folderBtn.connected {
+      background: rgba(34, 197, 94, 0.16);
+      border-color: #22c55e;
+      color: #4ade80;
+    }
+
     .color-btn {
-      width: 28px;
-      height: 28px;
+      width: 24px;
+      height: 24px;
       border-radius: 50%;
       border: 2px solid transparent;
       cursor: pointer;
@@ -81,7 +107,6 @@
       transform: scale(1.08);
     }
 
-    /* 1:1 정방형 뷰파인더 영역 */
     .viewfinder-wrapper {
       width: 100%;
       flex: 1;
@@ -112,7 +137,6 @@
       transform: scaleX(-1);
     }
 
-    /* 왼쪽 하단 2열 실시간 타임스탬프 오버레이 */
     .stamp-overlay {
       position: absolute;
       left: 5.5%;
@@ -134,7 +158,6 @@
       margin-top: 2px;
     }
 
-    /* 크기 옵션별 프리뷰 스케일 */
     .size-normal .stamp-date { font-size: clamp(16px, 4.5vw, 21px); }
     .size-normal .stamp-time { font-size: clamp(18px, 5.0vw, 24px); }
 
@@ -144,7 +167,6 @@
     .size-xlarge .stamp-date { font-size: clamp(23px, 6.5vw, 31px); }
     .size-xlarge .stamp-time { font-size: clamp(26px, 7.2vw, 35px); }
 
-    /* 촬영 플래시 효과 */
     .flash {
       position: absolute;
       inset: 0;
@@ -159,11 +181,10 @@
       transition: none;
     }
 
-    /* 하단 셔터 컨트롤 */
     .bottom-bar {
       width: 100%;
       max-width: 540px;
-      height: 120px;
+      height: 118px;
       padding: 0 28px;
       display: flex;
       align-items: center;
@@ -217,17 +238,12 @@
       cursor: pointer;
     }
 
-    #switchBtn:active {
-      background: #2c2c2e;
-    }
-
-    /* 토스트 알림 */
     .toast {
       position: fixed;
-      top: 72px;
+      top: 68px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(28, 28, 30, 0.94);
+      background: rgba(28, 28, 30, 0.95);
       color: #fff;
       padding: 9px 18px;
       border-radius: 20px;
@@ -237,6 +253,7 @@
       pointer-events: none;
       transition: opacity 0.2s ease;
       z-index: 30;
+      white-space: nowrap;
     }
 
     .toast.show {
@@ -246,21 +263,24 @@
 </head>
 <body>
 
-  <!-- 상단 글자 크기 / 색상 조절 -->
   <div class="top-bar">
+    <!-- 저장 폴더 선택 버튼 -->
+    <button id="folderBtn" title="저장할 폴더 선택">📁 폴더 지정</button>
+
+    <!-- 글자 크기 -->
     <div class="option-group" id="sizeGroup">
       <button class="opt-btn" data-size="normal">보통</button>
       <button class="opt-btn active" data-size="large">크게</button>
-      <button class="opt-btn" data-size="xlarge">아주 크게</button>
+      <button class="opt-btn" data-size="xlarge">특대</button>
     </div>
 
-    <div class="option-group" style="padding: 4px 8px; gap: 8px; align-items: center;">
+    <!-- 글자 색상 -->
+    <div class="option-group" style="padding: 4px 7px; gap: 6px;">
       <button class="color-btn active" data-color="#FFFFFF" style="background:#FFFFFF;" aria-label="흰색"></button>
       <button class="color-btn" data-color="#FACC15" style="background:#FACC15;" aria-label="노란색"></button>
     </div>
   </div>
 
-  <!-- 1:1 카메라 영역 -->
   <div class="viewfinder-wrapper">
     <div class="square-frame size-large" id="squareFrame">
       <video id="video" autoplay playsinline muted></video>
@@ -272,7 +292,6 @@
     </div>
   </div>
 
-  <!-- 하단 셔터 및 카메라 전환 -->
   <div class="bottom-bar">
     <div class="side-slot">
       <img id="thumbPreview" alt="최근 촬영" />
@@ -283,7 +302,7 @@
     </div>
   </div>
 
-  <div class="toast" id="toast">사진이 저장되었습니다</div>
+  <div class="toast" id="toast">저장되었습니다</div>
   <canvas id="canvas" style="display:none;"></canvas>
 
   <script>
@@ -295,17 +314,93 @@
     const liveTimeEl = document.getElementById('liveTime');
     const shutterBtn = document.getElementById('shutterBtn');
     const switchBtn = document.getElementById('switchBtn');
+    const folderBtn = document.getElementById('folderBtn');
     const flash = document.getElementById('flash');
     const toast = document.getElementById('toast');
     const thumbPreview = document.getElementById('thumbPreview');
 
-    let facingMode = 'environment'; // 기본 후면 카메라
+    let facingMode = 'environment';
     let currentStream = null;
     let currentSize = 'large';
     let currentColor = '#FFFFFF';
     let lastImageUrl = null;
+    let dirHandle = null; // 지정된 폴더 핸들
 
-    // 한국어 2열 날짜·시간 포맷 생성
+    // IndexedDB에 폴더 핸들 기억시키기 (재방문 시 편리하게 재연결)
+    function openDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open('TimestampCamDB', 1);
+        req.onupgradeneeded = () => req.result.createObjectStore('handles');
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function saveDirHandle(handle) {
+      const db = await openDB();
+      const tx = db.transaction('handles', 'readwrite');
+      tx.objectStore('handles').put(handle, 'targetDir');
+    }
+
+    async function loadDirHandle() {
+      try {
+        const db = await openDB();
+        return new Promise((resolve) => {
+          const tx = db.transaction('handles', 'readonly');
+          const req = tx.objectStore('handles').get('targetDir');
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => resolve(null);
+        });
+      } catch {
+        return null;
+      }
+    }
+
+    // 페이지 로드 시 이전에 지정한 폴더 이름 표시
+    (async () => {
+      const saved = await loadDirHandle();
+      if (saved) {
+        dirHandle = saved;
+        folderBtn.textContent = `📁 ${saved.name}`;
+        // 이미 권한이 유지되고 있는지 확인
+        const perm = await saved.queryPermission({ mode: 'readwrite' });
+        if (perm === 'granted') {
+          folderBtn.classList.add('connected');
+        }
+      }
+    })();
+
+    // 폴더 지정 버튼 클릭
+    folderBtn.addEventListener('click', async () => {
+      if (!window.showDirectoryPicker) {
+        alert('현재 브라우저는 폴더 직접 지정을 지원하지 않습니다. 기본 Download 폴더에 저장됩니다.');
+        return;
+      }
+      try {
+        // 이전에 저장된 핸들이 있으면 권한만 재요청 시도
+        if (dirHandle) {
+          const perm = await dirHandle.requestPermission({ mode: 'readwrite' });
+          if (perm === 'granted') {
+            folderBtn.textContent = `📁 ${dirHandle.name}`;
+            folderBtn.classList.add('connected');
+            showToast(`'${dirHandle.name}' 폴더가 연결되었습니다`);
+            return;
+          }
+        }
+        // 새 폴더 선택 창 열기
+        const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+        dirHandle = handle;
+        await saveDirHandle(handle);
+        folderBtn.textContent = `📁 ${handle.name}`;
+        folderBtn.classList.add('connected');
+        showToast(`'${handle.name}' 폴더가 지정되었습니다`);
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          alert('시스템 최상위 폴더(Pictures, DCIM 등)는 선택할 수 없습니다.\n그 안의 하위 폴더(예: Diet)를 선택해 주세요.');
+        }
+      }
+    });
+
     function getKoreanStamp() {
       const now = new Date();
       const days = ['일', '월', '화', '수', '목', '금', '토'];
@@ -336,7 +431,6 @@
     setInterval(updateClock, 500);
     updateClock();
 
-    // 글자 크기 선택
     document.querySelectorAll('#sizeGroup .opt-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('#sizeGroup .opt-btn').forEach(b => b.classList.remove('active'));
@@ -346,7 +440,6 @@
       });
     });
 
-    // 글자 색상 선택
     document.querySelectorAll('.color-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
@@ -356,7 +449,6 @@
       });
     });
 
-    // 카메라 실행
     async function startCamera() {
       if (currentStream) {
         currentStream.getTracks().forEach(track => track.stop());
@@ -373,7 +465,7 @@
         video.srcObject = currentStream;
         video.classList.toggle('mirror', facingMode === 'user');
       } catch (err) {
-        alert('카메라를 실행할 수 없습니다.\n브라우저 주소창의 카메라 권한을 허용해 주세요.\n(' + err.message + ')');
+        alert('카메라 권한을 허용해 주세요.\n(' + err.message + ')');
       }
     }
 
@@ -385,18 +477,24 @@
     function showToast(msg) {
       toast.textContent = msg;
       toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 1800);
+      setTimeout(() => toast.classList.remove('show'), 2200);
     }
 
-    // 1:1 정방형 촬영 및 타임스탬프 합성 저장
-    shutterBtn.addEventListener('click', async () => {
+    function fallbackDownload(url, filename) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    shutterBtn.addEventListener('click', () => {
       if (!video.videoWidth || !video.videoHeight) return;
 
-      // 플래시 애니메이션
       flash.classList.add('active');
       setTimeout(() => flash.classList.remove('active'), 80);
 
-      // 원본 비디오에서 중앙 기준 1:1 정사각형 영역 계산
       const vw = video.videoWidth;
       const vh = video.videoHeight;
       const side = Math.min(vw, vh);
@@ -407,7 +505,6 @@
       canvas.height = side;
       const ctx = canvas.getContext('2d');
 
-      // 전면 카메라 좌우 반전 보정
       if (facingMode === 'user') {
         ctx.translate(side, 0);
         ctx.scale(-1, 1);
@@ -415,7 +512,6 @@
       ctx.drawImage(video, sx, sy, side, side, 0, 0, side, side);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-      // 왼쪽 하단 2열 타임스탬프 그리기
       const { dateStr, timeStr, fileStr } = getKoreanStamp();
       const sizeRatio = currentSize === 'normal' ? 0.044 : currentSize === 'large' ? 0.056 : 0.068;
       const dateFontSize = Math.round(side * sizeRatio);
@@ -430,39 +526,50 @@
       ctx.shadowOffsetX = Math.max(2, Math.round(side * 0.0025));
       ctx.shadowOffsetY = Math.max(2, Math.round(side * 0.0025));
 
-      // 2열: 시간 (하단 기준선)
       ctx.font = `800 ${timeFontSize}px "Noto Sans KR", -apple-system, sans-serif`;
       const timeY = side - margin;
       ctx.fillText(timeStr, margin, timeY);
 
-      // 1열: 날짜 (시간 바로 위)
       ctx.font = `800 ${dateFontSize}px "Noto Sans KR", -apple-system, sans-serif`;
       const dateY = timeY - timeFontSize - lineGap;
       ctx.fillText(dateStr, margin, dateY);
 
-      // JPG 변환 및 다운로드
       canvas.toBlob(async (blob) => {
         if (!blob) return;
         const filename = `TS_${fileStr}.jpg`;
 
         if (lastImageUrl) URL.revokeObjectURL(lastImageUrl);
         lastImageUrl = URL.createObjectURL(blob);
-
         thumbPreview.src = lastImageUrl;
         thumbPreview.style.display = 'block';
 
-        const a = document.createElement('a');
-        a.href = lastImageUrl;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        // 지정된 폴더(Diet)가 있으면 해당 폴더에 직접 파일 쓰기
+        if (dirHandle) {
+          try {
+            let perm = await dirHandle.queryPermission({ mode: 'readwrite' });
+            if (perm !== 'granted') {
+              perm = await dirHandle.requestPermission({ mode: 'readwrite' });
+            }
+            if (perm === 'granted') {
+              folderBtn.classList.add('connected');
+              const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+              const writable = await fileHandle.createWritable();
+              await writable.write(blob);
+              await writable.close();
+              showToast(`'${dirHandle.name}' 폴더에 저장되었습니다`);
+              return;
+            }
+          } catch (e) {
+            console.error(e);
+          }
+        }
 
-        showToast('사진이 저장되었습니다');
+        // 폴더 미지정 또는 권한 거부 시 기본 Download 폴더로 저장
+        fallbackDownload(lastImageUrl, filename);
+        showToast('Download 폴더에 저장되었습니다');
       }, 'image/jpeg', 0.95);
     });
 
-    // 좌측 하단 썸네일 클릭 시 원본 이미지 새 창 확인 (아이폰 길게 눌러 저장용)
     thumbPreview.addEventListener('click', () => {
       if (lastImageUrl) window.open(lastImageUrl, '_blank');
     });
