@@ -10,7 +10,6 @@
   <meta name="apple-mobile-web-app-title" content="타임스탬프" />
   <title>타임스탬프</title>
 
-  <!-- 별도 이미지 파일 없이 바로 작동하는 내장 SVG 앱 아이콘 -->
   <link id="favicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%2318181b'/%3E%3Crect x='76' y='76' width='360' height='360' rx='56' fill='none' stroke='%23ffffff' stroke-width='20' stroke-opacity='0.25'/%3E%3Ccircle cx='256' cy='236' r='88' fill='none' stroke='%23ffffff' stroke-width='28'/%3E%3Ccircle cx='256' cy='236' r='34' fill='%23facc15'/%3E%3Ccircle cx='364' cy='136' r='16' fill='%2322c55e'/%3E%3Crect x='116' y='362' width='180' height='24' rx='12' fill='%23ffffff'/%3E%3Crect x='116' y='398' width='120' height='20' rx='10' fill='%23facc15'/%3E%3C/svg%3E" />
   <link id="appleIcon" rel="apple-touch-icon" href="" />
   <link id="manifestLink" rel="manifest" href="" />
@@ -133,6 +132,7 @@
       border-radius: 16px;
       overflow: hidden;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+      cursor: crosshair;
     }
 
     video {
@@ -144,6 +144,25 @@
 
     video.mirror {
       transform: scaleX(-1);
+    }
+
+    /* 터치 초점 링 애니메이션 */
+    .focus-ring {
+      position: absolute;
+      width: 64px;
+      height: 64px;
+      border: 2px solid #facc15;
+      border-radius: 50%;
+      transform: translate(-50%, -50%) scale(1.3);
+      opacity: 0;
+      pointer-events: none;
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
+      transition: transform 0.22s ease-out, opacity 0.2s ease;
+    }
+
+    .focus-ring.active {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
     }
 
     .stamp-overlay {
@@ -273,7 +292,8 @@
 <body>
 
   <div class="top-bar">
-    <button id="folderBtn" title="저장할 폴더 선택">📁 폴더 지정</button>
+    <!-- 클릭 시 폴더 연결/해제 토글 (팝업 싫을 땐 해제 가능) -->
+    <button id="folderBtn" title="저장 폴더 연결/해제">📥 기본저장</button>
 
     <div class="option-group" id="sizeGroup">
       <button class="opt-btn" data-size="normal">보통</button>
@@ -290,6 +310,7 @@
   <div class="viewfinder-wrapper">
     <div class="square-frame size-large" id="squareFrame">
       <video id="video" autoplay playsinline muted></video>
+      <div class="focus-ring" id="focusRing"></div>
       <div class="stamp-overlay" id="stampOverlay">
         <div class="stamp-date" id="liveDate">2026년 11월 17일 (화)</div>
         <div class="stamp-time" id="liveTime">오후 11:46</div>
@@ -312,46 +333,39 @@
   <canvas id="canvas" style="display:none;"></canvas>
 
   <script>
-    // 홈 화면 바로가기용 고해상도 PNG 아이콘 및 PWA Manifest 동적 생성
     (function setupAppIcon() {
       const iconCanvas = document.createElement('canvas');
       iconCanvas.width = 512;
       iconCanvas.height = 512;
       const ictx = iconCanvas.getContext('2d');
 
-      // 다크 라운드 배경
       ictx.fillStyle = '#18181b';
       ictx.beginPath();
       ictx.roundRect(0, 0, 512, 512, 112);
       ictx.fill();
 
-      // 1:1 프레임 가이드라인
       ictx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
       ictx.lineWidth = 18;
       ictx.beginPath();
       ictx.roundRect(72, 72, 368, 368, 52);
       ictx.stroke();
 
-      // 카메라 렌즈 링
       ictx.strokeStyle = '#ffffff';
       ictx.lineWidth = 28;
       ictx.beginPath();
       ictx.arc(256, 230, 86, 0, Math.PI * 2);
       ictx.stroke();
 
-      // 렌즈 코어 (노란 포인트)
       ictx.fillStyle = '#facc15';
       ictx.beginPath();
       ictx.arc(256, 230, 32, 0, Math.PI * 2);
       ictx.fill();
 
-      // 우측 상단 녹화/활성 램프
       ictx.fillStyle = '#22c55e';
       ictx.beginPath();
       ictx.arc(366, 134, 16, 0, Math.PI * 2);
       ictx.fill();
 
-      // 왼쪽 하단 2열 타임스탬프 바 표현
       ictx.fillStyle = '#ffffff';
       ictx.beginPath();
       ictx.roundRect(114, 356, 190, 22, 11);
@@ -388,6 +402,7 @@
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const squareFrame = document.getElementById('squareFrame');
+    const focusRing = document.getElementById('focusRing');
     const stampOverlay = document.getElementById('stampOverlay');
     const liveDateEl = document.getElementById('liveDate');
     const liveTimeEl = document.getElementById('liveTime');
@@ -400,10 +415,12 @@
 
     let facingMode = 'environment';
     let currentStream = null;
+    let videoTrack = null;
     let currentSize = 'large';
     let currentColor = '#FFFFFF';
     let lastImageUrl = null;
     let dirHandle = null;
+    let useCustomFolder = localStorage.getItem('useCustomFolder') === 'true';
 
     function openDB() {
       return new Promise((resolve, reject) => {
@@ -434,42 +451,59 @@
       }
     }
 
+    function updateFolderUI() {
+      if (useCustomFolder && dirHandle) {
+        folderBtn.textContent = `📁 ${dirHandle.name}`;
+        folderBtn.classList.add('connected');
+      } else {
+        folderBtn.textContent = '📥 기본저장';
+        folderBtn.classList.remove('connected');
+      }
+    }
+
     (async () => {
       const saved = await loadDirHandle();
-      if (saved) {
-        dirHandle = saved;
-        folderBtn.textContent = `📁 ${saved.name}`;
-        const perm = await saved.queryPermission({ mode: 'readwrite' });
-        if (perm === 'granted') {
-          folderBtn.classList.add('connected');
-        }
-      }
+      if (saved) dirHandle = saved;
+      updateFolderUI();
     })();
 
+    // 버튼 클릭 시: 기본저장(팝업 없음) <-> 지정폴더(Diet) 모드 전환
     folderBtn.addEventListener('click', async () => {
       if (!window.showDirectoryPicker) {
-        alert('현재 브라우저는 폴더 직접 지정을 지원하지 않습니다. 기본 Download 폴더에 저장됩니다.');
+        showToast('현재 브라우저는 기본 Download 폴더만 지원합니다');
         return;
       }
+
+      // 이미 지정폴더 모드인 상태에서 누르면 기본저장(팝업 없음)으로 전환
+      if (useCustomFolder) {
+        useCustomFolder = false;
+        localStorage.setItem('useCustomFolder', 'false');
+        updateFolderUI();
+        showToast('팝업 없는 기본저장(Download) 모드로 전환되었습니다');
+        return;
+      }
+
       try {
         if (dirHandle) {
           const perm = await dirHandle.requestPermission({ mode: 'readwrite' });
           if (perm === 'granted') {
-            folderBtn.textContent = `📁 ${dirHandle.name}`;
-            folderBtn.classList.add('connected');
-            showToast(`'${dirHandle.name}' 폴더가 연결되었습니다`);
+            useCustomFolder = true;
+            localStorage.setItem('useCustomFolder', 'true');
+            updateFolderUI();
+            showToast(`'${dirHandle.name}' 폴더 직접 저장이 켜졌습니다`);
             return;
           }
         }
         const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
         dirHandle = handle;
         await saveDirHandle(handle);
-        folderBtn.textContent = `📁 ${handle.name}`;
-        folderBtn.classList.add('connected');
-        showToast(`'${handle.name}' 폴더가 지정되었습니다`);
+        useCustomFolder = true;
+        localStorage.setItem('useCustomFolder', 'true');
+        updateFolderUI();
+        showToast(`'${handle.name}' 폴더가 연결되었습니다`);
       } catch (err) {
         if (err.name !== 'AbortError') {
-          alert('시스템 최상위 폴더(Pictures, DCIM 등)는 선택할 수 없습니다.\n그 안의 하위 폴더(예: Diet)를 선택해 주세요.');
+          alert('Pictures 또는 DCIM 안의 하위 폴더(예: Diet)를 선택해 주세요.');
         }
       }
     });
@@ -522,6 +556,31 @@
       });
     });
 
+    // 연속 오토포커스 적용
+    async function applyAutoFocus(track, point = null) {
+      if (!track || !track.getCapabilities) return;
+      try {
+        const caps = track.getCapabilities();
+        const advanced = [];
+
+        if (caps.focusMode && caps.focusMode.includes('continuous')) {
+          advanced.push({ focusMode: 'continuous' });
+        } else if (caps.focusMode && caps.focusMode.includes('auto')) {
+          advanced.push({ focusMode: 'auto' });
+        }
+
+        if (point && caps.pointsOfInterest) {
+          advanced.push({ pointsOfInterest: [point] });
+        }
+
+        if (advanced.length > 0) {
+          await track.applyConstraints({ advanced });
+        }
+      } catch (e) {
+        // 기기별 미지원 제약조건 무시
+      }
+    }
+
     async function startCamera() {
       if (currentStream) {
         currentStream.getTracks().forEach(track => track.stop());
@@ -531,16 +590,47 @@
           video: {
             facingMode: { ideal: facingMode },
             width: { ideal: 1920 },
-            height: { ideal: 1920 }
+            height: { ideal: 1920 },
+            focusMode: { ideal: 'continuous' }
           },
           audio: false
         });
         video.srcObject = currentStream;
         video.classList.toggle('mirror', facingMode === 'user');
+        videoTrack = currentStream.getVideoTracks()[0];
+        await applyAutoFocus(videoTrack);
       } catch (err) {
         alert('카메라 권한을 허용해 주세요.\n(' + err.message + ')');
       }
     }
+
+    // 뷰파인더 터치 시 초점 링 표시 및 초점 재조정 트리거
+    let focusTimer = null;
+    squareFrame.addEventListener('click', async (e) => {
+      const rect = squareFrame.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      focusRing.style.left = `${x}px`;
+      focusRing.style.top = `${y}px`;
+      focusRing.classList.remove('active');
+      void focusRing.offsetWidth; // 리플로우로 애니메이션 재시작
+      focusRing.classList.add('active');
+
+      clearTimeout(focusTimer);
+      focusTimer = setTimeout(() => focusRing.classList.remove('active'), 800);
+
+      if (videoTrack && videoTrack.getCapabilities) {
+        const caps = videoTrack.getCapabilities();
+        try {
+          // 단발 초점(single-shot) 전환 후 다시 연속(continuous)으로 돌아가며 초점 재탐색 유도
+          if (caps.focusMode && caps.focusMode.includes('single-shot')) {
+            await videoTrack.applyConstraints({ advanced: [{ focusMode: 'single-shot' }] });
+          }
+          await applyAutoFocus(videoTrack, { x: x / rect.width, y: y / rect.height });
+        } catch (err) {}
+      }
+    });
 
     switchBtn.addEventListener('click', () => {
       facingMode = facingMode === 'environment' ? 'user' : 'environment';
@@ -616,14 +706,13 @@
         thumbPreview.src = lastImageUrl;
         thumbPreview.style.display = 'block';
 
-        if (dirHandle) {
+        if (useCustomFolder && dirHandle) {
           try {
             let perm = await dirHandle.queryPermission({ mode: 'readwrite' });
             if (perm !== 'granted') {
               perm = await dirHandle.requestPermission({ mode: 'readwrite' });
             }
             if (perm === 'granted') {
-              folderBtn.classList.add('connected');
               const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
               const writable = await fileHandle.createWritable();
               await writable.write(blob);
