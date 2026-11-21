@@ -41,11 +41,11 @@
     .top-bar {
       width: 100%;
       max-width: 540px;
-      padding: 12px 14px;
+      padding: 12px 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       z-index: 10;
     }
 
@@ -62,9 +62,9 @@
       background: transparent;
       color: #a1a1aa;
       border: none;
-      padding: 6px 10px;
+      padding: 6px 8px;
       border-radius: 17px;
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 700;
       font-family: inherit;
       cursor: pointer;
@@ -77,23 +77,28 @@
       color: #000000;
     }
 
-    #folderBtn {
+    .pill-btn {
       background: #1c1c1e;
-      color: #e4e4e7;
+      color: #a1a1aa;
       border: 1px solid #3f3f46;
-      padding: 6px 11px;
+      padding: 6px 9px;
       border-radius: 20px;
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 700;
       font-family: inherit;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 4px;
-      max-width: 125px;
+      gap: 3px;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+
+    #folderBtn {
+      color: #e4e4e7;
+      max-width: 102px;
       overflow: hidden;
       text-overflow: ellipsis;
-      white-space: nowrap;
     }
 
     #folderBtn.connected {
@@ -102,9 +107,15 @@
       color: #4ade80;
     }
 
+    #proteinBtn.active {
+      background: rgba(250, 204, 21, 0.2);
+      border-color: #facc15;
+      color: #facc15;
+    }
+
     .color-btn {
-      width: 24px;
-      height: 24px;
+      width: 22px;
+      height: 22px;
       border-radius: 50%;
       border: 2px solid transparent;
       cursor: pointer;
@@ -146,7 +157,6 @@
       transform: scaleX(-1);
     }
 
-    /* 터치 초점 링 애니메이션 */
     .focus-ring {
       position: absolute;
       width: 64px;
@@ -175,23 +185,34 @@
       letter-spacing: -0.3px;
     }
 
+    .stamp-tag {
+      display: none;
+      font-weight: 800;
+      margin-bottom: 2px;
+    }
+
+    .stamp-tag.show {
+      display: block;
+    }
+
     .stamp-date {
       font-weight: 800;
-      font-size: clamp(18px, 5.2vw, 25px);
     }
 
     .stamp-time {
       font-weight: 800;
-      font-size: clamp(20px, 5.8vw, 28px);
       margin-top: 2px;
     }
 
+    .size-normal .stamp-tag,
     .size-normal .stamp-date { font-size: clamp(16px, 4.5vw, 21px); }
     .size-normal .stamp-time { font-size: clamp(18px, 5.0vw, 24px); }
 
+    .size-large .stamp-tag,
     .size-large .stamp-date { font-size: clamp(20px, 5.6vw, 27px); }
     .size-large .stamp-time { font-size: clamp(22px, 6.2vw, 30px); }
 
+    .size-xlarge .stamp-tag,
     .size-xlarge .stamp-date { font-size: clamp(23px, 6.5vw, 31px); }
     .size-xlarge .stamp-time { font-size: clamp(26px, 7.2vw, 35px); }
 
@@ -292,8 +313,7 @@
 <body>
 
   <div class="top-bar">
-    <!-- 클릭 시 폴더 연결/해제 토글 (팝업 싫을 땐 해제 가능) -->
-    <button id="folderBtn" title="저장 폴더 연결/해제">📥 기본저장</button>
+    <button id="folderBtn" class="pill-btn" title="저장 폴더 연결/해제">📥 기본저장</button>
 
     <div class="option-group" id="sizeGroup">
       <button class="opt-btn" data-size="normal">보통</button>
@@ -301,10 +321,12 @@
       <button class="opt-btn" data-size="xlarge">특대</button>
     </div>
 
-    <div class="option-group" style="padding: 4px 7px; gap: 6px;">
+    <div class="option-group" style="padding: 4px 6px; gap: 5px;">
       <button class="color-btn active" data-color="#FFFFFF" style="background:#FFFFFF;" aria-label="흰색"></button>
       <button class="color-btn" data-color="#FACC15" style="background:#FACC15;" aria-label="노란색"></button>
     </div>
+
+    <button id="proteinBtn" class="pill-btn" title="프로틴 라벨 표시 전환">프로틴</button>
   </div>
 
   <div class="viewfinder-wrapper">
@@ -312,8 +334,9 @@
       <video id="video" autoplay playsinline muted></video>
       <div class="focus-ring" id="focusRing"></div>
       <div class="stamp-overlay" id="stampOverlay">
-        <div class="stamp-date" id="liveDate">2026년 11월 17일 (화)</div>
-        <div class="stamp-time" id="liveTime">오후 11:46</div>
+        <div class="stamp-tag" id="liveTag">[프로틴]</div>
+        <div class="stamp-date" id="liveDate">2026년 11월 21일 (토)</div>
+        <div class="stamp-time" id="liveTime">오후 8:29</div>
       </div>
       <div class="flash" id="flash"></div>
     </div>
@@ -404,11 +427,13 @@
     const squareFrame = document.getElementById('squareFrame');
     const focusRing = document.getElementById('focusRing');
     const stampOverlay = document.getElementById('stampOverlay');
+    const liveTagEl = document.getElementById('liveTag');
     const liveDateEl = document.getElementById('liveDate');
     const liveTimeEl = document.getElementById('liveTime');
     const shutterBtn = document.getElementById('shutterBtn');
     const switchBtn = document.getElementById('switchBtn');
     const folderBtn = document.getElementById('folderBtn');
+    const proteinBtn = document.getElementById('proteinBtn');
     const flash = document.getElementById('flash');
     const toast = document.getElementById('toast');
     const thumbPreview = document.getElementById('thumbPreview');
@@ -418,9 +443,17 @@
     let videoTrack = null;
     let currentSize = 'large';
     let currentColor = '#FFFFFF';
+    let isProteinOn = false;
     let lastImageUrl = null;
     let dirHandle = null;
     let useCustomFolder = localStorage.getItem('useCustomFolder') === 'true';
+
+    // 프로틴 토글 버튼 (기본 OFF)
+    proteinBtn.addEventListener('click', () => {
+      isProteinOn = !isProteinOn;
+      proteinBtn.classList.toggle('active', isProteinOn);
+      liveTagEl.classList.toggle('show', isProteinOn);
+    });
 
     function openDB() {
       return new Promise((resolve, reject) => {
@@ -467,14 +500,12 @@
       updateFolderUI();
     })();
 
-    // 버튼 클릭 시: 기본저장(팝업 없음) <-> 지정폴더(Diet) 모드 전환
     folderBtn.addEventListener('click', async () => {
       if (!window.showDirectoryPicker) {
         showToast('현재 브라우저는 기본 Download 폴더만 지원합니다');
         return;
       }
 
-      // 이미 지정폴더 모드인 상태에서 누르면 기본저장(팝업 없음)으로 전환
       if (useCustomFolder) {
         useCustomFolder = false;
         localStorage.setItem('useCustomFolder', 'false');
@@ -556,7 +587,6 @@
       });
     });
 
-    // 연속 오토포커스 적용
     async function applyAutoFocus(track, point = null) {
       if (!track || !track.getCapabilities) return;
       try {
@@ -576,9 +606,7 @@
         if (advanced.length > 0) {
           await track.applyConstraints({ advanced });
         }
-      } catch (e) {
-        // 기기별 미지원 제약조건 무시
-      }
+      } catch (e) {}
     }
 
     async function startCamera() {
@@ -604,7 +632,6 @@
       }
     }
 
-    // 뷰파인더 터치 시 초점 링 표시 및 초점 재조정 트리거
     let focusTimer = null;
     squareFrame.addEventListener('click', async (e) => {
       const rect = squareFrame.getBoundingClientRect();
@@ -614,7 +641,7 @@
       focusRing.style.left = `${x}px`;
       focusRing.style.top = `${y}px`;
       focusRing.classList.remove('active');
-      void focusRing.offsetWidth; // 리플로우로 애니메이션 재시작
+      void focusRing.offsetWidth;
       focusRing.classList.add('active');
 
       clearTimeout(focusTimer);
@@ -623,7 +650,6 @@
       if (videoTrack && videoTrack.getCapabilities) {
         const caps = videoTrack.getCapabilities();
         try {
-          // 단발 초점(single-shot) 전환 후 다시 연속(continuous)으로 돌아가며 초점 재탐색 유도
           if (caps.focusMode && caps.focusMode.includes('single-shot')) {
             await videoTrack.applyConstraints({ advanced: [{ focusMode: 'single-shot' }] });
           }
@@ -689,13 +715,21 @@
       ctx.shadowOffsetX = Math.max(2, Math.round(side * 0.0025));
       ctx.shadowOffsetY = Math.max(2, Math.round(side * 0.0025));
 
+      // 3열(하단 기준선): 시간
       ctx.font = `800 ${timeFontSize}px "Noto Sans KR", -apple-system, sans-serif`;
       const timeY = side - margin;
       ctx.fillText(timeStr, margin, timeY);
 
+      // 2열: 날짜
       ctx.font = `800 ${dateFontSize}px "Noto Sans KR", -apple-system, sans-serif`;
       const dateY = timeY - timeFontSize - lineGap;
       ctx.fillText(dateStr, margin, dateY);
+
+      // 1열(토글 ON 일 때만): [프로틴]
+      if (isProteinOn) {
+        const tagY = dateY - dateFontSize - lineGap;
+        ctx.fillText('[프로틴]', margin, tagY);
+      }
 
       canvas.toBlob(async (blob) => {
         if (!blob) return;
